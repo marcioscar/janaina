@@ -5,10 +5,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 - `npm run dev` — dev server with HMR (http://localhost:5173)
-- `npm run build` — production build to `build/client` and `build/server`
+- `npm run build` — `prisma generate` + production build to `build/client` and `build/server`
 - `npm run start` — serve the production build
 - `npm run typecheck` — generate route types (`react-router typegen`) and run `tsc`. Run this after adding or renaming routes so the `./+types/*` imports resolve.
 - `npx shadcn@latest add <component>` — add a shadcn/ui component into `app/components/ui/`
+- `npx prisma generate` — regenerate the client after editing `prisma/schema.prisma` (also runs on `postinstall` and `build`)
+- `npx prisma db push` — sync indexes to MongoDB (there are no migrations with the MongoDB provider)
 
 No test runner or linter is configured yet.
 
@@ -19,6 +21,13 @@ No test runner or linter is configured yet.
 - `app/root.tsx` holds the HTML `Layout`, the root `App` and the global `ErrorBoundary`.
 - Path alias `~/*` → `app/*`.
 - `app/welcome/` is leftover template scaffolding and can be removed once real pages exist.
+
+## Database
+
+- **MongoDB Atlas via Prisma 6** (`provider = "mongodb"`), schema in `prisma/schema.prisma`.
+- `DATABASE_URL` in `.env` (gitignored) points to the `janaina` database on the same Atlas cluster used by the `marcioscar` project.
+- `app/db.server.ts` exports a singleton `db` (PrismaClient). Only import it from `*.server.ts` files, loaders and actions — never from client code.
+- Collection `despesas`: nome, categoria, valor, data, comprovante, conta, fatura?, obs, createdAt, updatedAt; indexed on `data` and `categoria`.
 
 ## UI / theme
 
@@ -31,4 +40,4 @@ No test runner or linter is configured yet.
 
 ## Deployment
 
-`Dockerfile` builds and runs the app with `react-router-serve` on the production build.
+`Dockerfile` builds with a placeholder `DATABASE_URL` (the build never touches the DB) and runs `react-router-serve`. The real `DATABASE_URL` must be provided at runtime.
