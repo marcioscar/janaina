@@ -8,5 +8,7 @@ export default {
   // recusa toda ação com 400 (proteção anti-CSRF). Liberamos só o domínio do próprio app
   // (o mesmo das regras Host(...) em deploy/portainer-stack.yml); qualquer outra origem
   // continua bloqueada.
-  allowedActionOrigins: ["janaina.marcioscar.com.br"],
+  // O domínio antigo fica só durante a transição, até janaina.marcioscar.com.br propagar
+  // (domínio .br registrado em 2026-09-28); depois pode ser removido daqui e da stack.
+  allowedActionOrigins: ["janaina.marcioscar.com.br", "janaina.quattoracademia.com"],
 } satisfies Config;
