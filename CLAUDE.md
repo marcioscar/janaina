@@ -56,6 +56,9 @@ No test runner or linter is configured yet.
   - The `voltar` redirect only accepts internal paths.
   - If `APP_SENHA` is not set, nobody can log in (fail closed).
 - Logout is a POST to `/logout` (the "Sair" button in the sidebar footer).
+- `react-router.config.ts` sets `allowedActionOrigins: ["janaina.quattoracademia.com"]`.
+  - Why: Traefik terminates HTTPS and forwards over http, so the page origin (`https://`) doesn't match the request URL the server sees (`http://`). Without this setting every action, login included, fails with `400 Bad Request` (React Router's CSRF check).
+  - If the domain changes, update this list.
 - Read env vars with `variavelAmbiente()` (`app/lib/env.server.ts`), which strips surrounding quotes because Portainer may keep the quotes from `.env`.
 
 ## Database
