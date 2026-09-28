@@ -1,0 +1,44 @@
+# Stack do Portainer (Docker Swarm) para janaina.quattoracademia.com.
+# Mesmo formato da stack financeiro-quattor: sem porta publicada; o Traefik encaminha pelo
+# domínio até a porta interna 3000 (padrão do react-router-serve).
+# Os valores das variáveis NÃO ficam aqui: preencha em "Environment variables" no Portainer,
+# sem aspas em volta dos valores.
+version: "3.8"
+
+services:
+  janaina-financeiro:
+    image: marcioscar/janaina-financeiro:latest
+
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      # PocketBase (upload de comprovantes)
+      - POCKETBASE_URL=${POCKETBASE_URL}
+      - POCKETBASE_ADMIN_EMAIL=${POCKETBASE_ADMIN_EMAIL}
+      - POCKETBASE_ADMIN_PASSWORD=${POCKETBASE_ADMIN_PASSWORD}
+      - POCKETBASE_COLLECTION=${POCKETBASE_COLLECTION}
+      - POCKETBASE_FIELD=${POCKETBASE_FIELD}
+      # Importação de fatura em PDF
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+    networks:
+      - Quattornet # rede do Traefik
+
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=Quattornet"
+        - "traefik.http.services.janaina-financeiro.loadbalancer.server.port=3000"
+
+        # HTTP -> redireciona para HTTPS
+        - "traefik.http.routers.janaina-financeiro-http.rule=Host(`janaina.quattoracademia.com`)"
+        - "traefik.http.routers.janaina-financeiro-http.entrypoints=web"
+        - "traefik.http.routers.janaina-financeiro-http.middlewares=redirect-to-https@docker"
+        # HTTPS
+        - "traefik.http.routers.janaina-financeiro-https.rule=Host(`janaina.quattoracademia.com`)"
+        - "traefik.http.routers.janaina-financeiro-https.entrypoints=websecure"
+        - "traefik.http.routers.janaina-financeiro-https.tls=true"
+        - "traefik.http.routers.janaina-financeiro-https.tls.certresolver=myresolver"
+
+networks:
+  Quattornet:
+    external: true
