@@ -18,7 +18,7 @@ No test runner or linter is configured yet.
 
 - **React Router v8, Framework Mode**, SSR enabled (`react-router.config.ts`). Before changing routing, loaders, actions or forms, read `.agents/skills/react-router/SKILL.md` and `references/framework-mode.md`.
 - Routes are declared explicitly in `app/routes.ts` (not file-based). Route modules live in `app/routes/` and import their types from `./+types/<route>`.
-- `app/root.tsx` holds the HTML `Layout`, the root `App` and the global `ErrorBoundary`.
+- `app/root.tsx` holds the HTML `Layout`, a bare root `App` (`Outlet` plus `Toaster`) and the global `ErrorBoundary`. The sidebar layout lives in `app/routes/protegido.tsx`.
 - Path alias `~/*` → `app/*`.
 - Layout: `app/root.tsx` wraps every page in a collapsible shadcn sidebar (`app/components/app-sidebar.tsx`). To add a page, add the route in `app/routes.ts` and an entry to `navGroups` in the sidebar.
 - `/` is the dashboard (`app/routes/home.tsx`). The despesas page was ported from the `marcioscar` project's `/contas` page, without the Brassaco feature.
@@ -48,7 +48,12 @@ No test runner or linter is configured yet.
 
 ## Access (password only)
 
-- Everything except `/login` requires a single password in `APP_SENHA`, with no user accounts. The check is a server `middleware` in `app/root.tsx`, so it covers actions (create, edit, delete) as well as page loads. `/login` renders without the sidebar.
+- Everything except `/login` and `/logout` requires a single password in `APP_SENHA`, with no user accounts.
+  - The protected pages are nested under the layout route `app/routes/protegido.tsx`, see `app/routes.ts`. That layout holds the server `middleware` and renders the sidebar.
+  - Because the middleware sits on a layout, it covers actions and the browser's `/page.data` requests too.
+  - Don't switch to checking paths in root middleware: client-side submissions hit `/login.data`, not `/login`.
+  - The layout also renders the sidebar, so `/login` shows without it.
+- A new page that needs the password goes inside that `layout(...)` in `app/routes.ts`.
 - `app/sessao.server.ts`:
   - The session is a signed `httpOnly` cookie (`janaina_sessao`) valid for 7 days.
   - The signing secret is derived from `APP_SENHA`, so changing the password logs everyone out.

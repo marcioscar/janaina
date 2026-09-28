@@ -1,10 +1,15 @@
-import { type RouteConfig, index, route } from "@react-router/dev/routes";
+import { type RouteConfig, index, layout, route } from "@react-router/dev/routes";
 
 export default [
-  index("routes/home.tsx"),
+  // Públicas
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.tsx"),
-  route("despesas", "routes/despesas.tsx"),
-  route("categorias", "routes/categorias.tsx"),
-  route("contas", "routes/contas.tsx"),
+
+  // Exigem a senha (middleware em routes/protegido.tsx)
+  layout("routes/protegido.tsx", [
+    index("routes/home.tsx"),
+    route("despesas", "routes/despesas.tsx"),
+    route("categorias", "routes/categorias.tsx"),
+    route("contas", "routes/contas.tsx"),
+  ]),
 ] satisfies RouteConfig;
