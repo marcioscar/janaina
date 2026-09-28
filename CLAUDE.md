@@ -29,7 +29,8 @@ No test runner or linter is configured yet.
 - `app/models/despesas.server.ts`: queries. Date-filtered reads go through `db.$runCommandRaw` with `montarFiltroData`, because Prisma's MongoDB driver doesn't support every query operator. Follow that pattern for new date filters.
 - `app/models/pocketbase.server.ts` uploads receipts (comprovantes) to PocketBase and stores the public URL in `comprovante`.
 - `app/models/importar-pdf.server.ts` sends a bank statement or card-bill PDF to the Claude API (`claude-sonnet-4-6`) and gets transactions back as JSON. `importar-pdf-dialog.tsx` then walks the user through them one by one and keeps progress in `localStorage`.
-- Categories live in the database and are managed at `/categorias` (`app/models/categorias.server.ts`). Despesas store the category *name*, not an id. Renaming a category also updates its despesas, and a category that still has despesas can't be deleted. The account list is still hardcoded in `app/components/despesas/despesa-options.ts`.
+- Categories (`/categorias`) and accounts (`/contas`) are single-field lookups stored in the database. Despesas store their *name* (`despesas.categoria` / `despesas.conta`), not an id.
+- Both lookups share `app/models/cadastro-simples.server.ts`: `criarCadastroSimples()` handles list, create, rename and delete, and `executarAcaoCadastro()` is the route action. The screen is the shared `app/components/cadastro-simples-page.tsx`. The rules: names are unique ignoring case and accents, renaming also updates the despesas, and an entry still used by despesas can't be deleted. To add another lookup of this kind, create a Prisma model with the same shape and reuse these pieces.
 - The table uses `@tanstack/react-table` **v8**. Keep it on v8, because v9 changed the API.
 
 ## Database
@@ -38,7 +39,7 @@ No test runner or linter is configured yet.
 - `DATABASE_URL` in `.env` (gitignored) points to the `janaina` database on the same Atlas cluster used by the `marcioscar` project.
 - `app/db.server.ts` exports a singleton `db` (PrismaClient). Only import it from `*.server.ts` files, loaders and actions — never from client code.
 - Other env vars: `POCKETBASE_URL`, `POCKETBASE_ADMIN_EMAIL`, `POCKETBASE_ADMIN_PASSWORD`, `POCKETBASE_COLLECTION` and `POCKETBASE_FIELD` (receipt upload), plus `ANTHROPIC_API_KEY` (PDF import). All of them are copied from `marcioscar`.
-- Collection `categorias`: nome (unique), createdAt, updatedAt.
+- Collections `categorias` and `contas`: nome (unique), createdAt, updatedAt.
 - Collection `despesas`: nome, categoria, valor, data, comprovante, conta, fatura?, obs, createdAt, updatedAt; indexed on `data` and `categoria`.
 
 ## UI / theme

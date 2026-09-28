@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router";
-import { ReceiptIcon, TagsIcon, type LucideIcon } from "lucide-react";
+import { LandmarkIcon, ReceiptIcon, TagsIcon, type LucideIcon } from "lucide-react";
 import {
 	Sidebar,
 	SidebarContent,
@@ -37,6 +37,7 @@ const navGroups: NavGroup[] = [
 		label: "Cadastros",
 		items: [
 			{ title: "Categorias", href: "/categorias", icon: TagsIcon, color: "var(--paleta-4)" },
+			{ title: "Contas", href: "/contas", icon: LandmarkIcon, color: "var(--paleta-5)" },
 		],
 	},
 ];

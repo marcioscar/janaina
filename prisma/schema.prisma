@@ -30,3 +30,10 @@ model categorias {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model contas {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

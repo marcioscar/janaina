@@ -15,7 +15,8 @@ import {
 	excluirDespesa,
 	listarDespesas,
 } from "~/models/despesas.server";
-import { listarNomesCategorias } from "~/models/categorias.server";
+import { categorias as cadastroCategorias } from "~/models/categorias.server";
+import { contas as cadastroContas } from "~/models/contas.server";
 import { BOTAO_EDITAR_CLASS, BOTAO_IMPORTAR_CLASS, BOTAO_NOVO_CLASS } from "~/lib/botoes";
 import { uploadReciboAndGetUrl } from "~/models/pocketbase.server";
 import {
@@ -36,6 +37,7 @@ type LoaderData = {
 	totalDespesas: number;
 	totalValor: number;
 	categorias: string[];
+	contas: string[];
 	filtroDataInicio: string;
 	filtroDataFim: string;
 };
@@ -188,9 +190,10 @@ export async function loader({
 		parseDateFromSearchParam(filtroDataFimRaw, "fim") ?? intervaloMesAtual.fim;
 	const intervaloData = normalizarIntervaloDatas(dataInicio, dataFim);
 
-	const [despesas, categorias] = await Promise.all([
+	const [despesas, categorias, contas] = await Promise.all([
 		listarDespesas(intervaloData),
-		listarNomesCategorias(),
+		cadastroCategorias.listarNomes(),
+		cadastroContas.listarNomes(),
 	]);
 	const totalValor = despesas.reduce((acc, item) => acc + item.valor, 0);
 
@@ -199,6 +202,7 @@ export async function loader({
 		totalDespesas: despesas.length,
 		totalValor,
 		categorias,
+		contas,
 		filtroDataInicio: formatarDataInput(
 			intervaloData.inicio ?? intervaloMesAtual.inicio,
 		),
@@ -223,10 +227,13 @@ export async function action({
 				throw new Error("Selecione um arquivo PDF válido.");
 			}
 			const bytes = await pdfFile.arrayBuffer();
-			const conta = parseString(formData.get("contaPadrao")) || "Nubank";
+			const conta = parseString(formData.get("contaPadrao"));
+			if (!conta) {
+				throw new Error("Selecione a conta padrao.");
+			}
 			const dataInicio = parseString(formData.get("dataInicio")) || undefined;
 			const apenasDebitos = formData.get("apenasDebitos") === "on";
-			const categorias = await listarNomesCategorias();
+			const categorias = await cadastroCategorias.listarNomes();
 			const transacoes = await extrairTransacoesDePdf(
 				Buffer.from(bytes),
 				conta,
@@ -319,6 +326,7 @@ export default function Despesas() {
 		totalDespesas,
 		totalValor,
 		categorias,
+		contas,
 		filtroDataInicio,
 		filtroDataFim,
 	} = useLoaderData<typeof loader>();
@@ -385,6 +393,7 @@ export default function Despesas() {
 					</Button>
 					<ImportarPdfDialog
 						categorias={categorias}
+						contas={contas}
 						triggerClassName={BOTAO_IMPORTAR_CLASS}
 					/>
 					<DespesaFormDialog
@@ -392,6 +401,7 @@ export default function Despesas() {
 						onOpenChange={setDialogNovoOpen}
 						isSubmitting={isSubmitting}
 						categorias={categorias}
+						contas={contas}
 						triggerClassName={BOTAO_NOVO_CLASS}
 					/>
 				</div>
@@ -442,6 +452,7 @@ export default function Despesas() {
 				submittingIntent={submittingIntent}
 				despesa={despesaSelecionada}
 				categorias={categorias}
+				contas={contas}
 			/>
 		</main>
 	);

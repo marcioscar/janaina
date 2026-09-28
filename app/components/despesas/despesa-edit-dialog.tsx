@@ -14,7 +14,6 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { SearchableComboboxField } from "./searchable-combobox-field";
-import { CONTAS_DESPESA } from "./despesa-options";
 
 export type DespesaEditavel = {
 	id: string;
@@ -35,6 +34,7 @@ type DespesaEditDialogProps = {
 	submittingIntent?: string;
 	despesa: DespesaEditavel | null;
 	categorias: string[];
+	contas: string[];
 };
 
 function formatarDataParaInput(dataIso: string): string {
@@ -48,6 +48,7 @@ export function DespesaEditDialog({
 	submittingIntent,
 	despesa,
 	categorias,
+	contas,
 }: DespesaEditDialogProps) {
 	const [categoriaSelecionada, setCategoriaSelecionada] = useState("");
 	const [contaSelecionada, setContaSelecionada] = useState("");
@@ -119,7 +120,7 @@ export function DespesaEditDialog({
 							label='Conta'
 							name='conta'
 							placeholder='Selecione uma conta'
-							options={CONTAS_DESPESA}
+							options={contas}
 							value={contaSelecionada}
 							onValueChange={setContaSelecionada}
 							required
