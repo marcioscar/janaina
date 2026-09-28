@@ -9,7 +9,7 @@ import {
 
 import type { Route } from "./+types/root";
 import { AppSidebar } from "~/components/app-sidebar";
-import { MarcaIcone } from "~/components/marca";
+import { MarcaHorizontal } from "~/components/marca";
 import {
   SidebarInset,
   SidebarProvider,
@@ -19,7 +19,9 @@ import { Toaster } from "~/components/ui/sonner";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import "./app.css";
 
-export const links: Route.LinksFunction = () => [];
+export const links: Route.LinksFunction = () => [
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -46,8 +48,7 @@ export default function App() {
       <SidebarInset>
         <header className="flex h-14 items-center gap-2 border-b px-4">
           <SidebarTrigger />
-          <MarcaIcone className="size-7 md:hidden" />
-          <span className="text-sm font-medium md:hidden">Janaina</span>
+          <MarcaHorizontal mostrarApoio={false} className="md:hidden [&_svg]:size-7" />
         </header>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-4">
           <Outlet />

@@ -17,6 +17,8 @@ import {
 } from "~/models/despesas.server";
 import { categorias as cadastroCategorias } from "~/models/categorias.server";
 import { contas as cadastroContas } from "~/models/contas.server";
+import { formatarMoeda } from "~/lib/formato";
+import { formatarDataInput, lerPeriodoDaUrl } from "~/lib/periodo";
 import { BOTAO_EDITAR_CLASS, BOTAO_IMPORTAR_CLASS, BOTAO_NOVO_CLASS } from "~/lib/botoes";
 import { uploadReciboAndGetUrl } from "~/models/pocketbase.server";
 import {
@@ -38,6 +40,7 @@ type LoaderData = {
 	totalValor: number;
 	categorias: string[];
 	contas: string[];
+	coresCategorias: Record<string, number>;
 	filtroDataInicio: string;
 	filtroDataFim: string;
 };
@@ -85,73 +88,6 @@ async function uploadComprovanteSeExiste(
 	return uploadReciboAndGetUrl(Buffer.from(bytes), file.name);
 }
 
-function formatarMoeda(valor: number): string {
-	return valor.toLocaleString("pt-BR", {
-		style: "currency",
-		currency: "BRL",
-	});
-}
-
-function formatarDataInput(data: Date): string {
-	return data.toISOString().slice(0, 10);
-}
-
-function obterIntervaloMesAtual(): { inicio: Date; fim: Date } {
-	const agora = new Date();
-	const inicio = new Date(
-		Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), 1, 0, 0, 0, 0),
-	);
-	const fim = new Date(
-		Date.UTC(
-			agora.getUTCFullYear(),
-			agora.getUTCMonth() + 1,
-			0,
-			23,
-			59,
-			59,
-			999,
-		),
-	);
-	return { inicio, fim };
-}
-
-function parseDateFromSearchParam(
-	value: string | null,
-	tipo: "inicio" | "fim",
-): Date | undefined {
-	if (!value) {
-		return undefined;
-	}
-
-	const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-	if (!match) {
-		return undefined;
-	}
-
-	const [, year, month, day] = match;
-	const parsedDate = new Date(
-		Date.UTC(
-			Number(year),
-			Number(month) - 1,
-			Number(day),
-			tipo === "fim" ? 23 : 0,
-			tipo === "fim" ? 59 : 0,
-			tipo === "fim" ? 59 : 0,
-			tipo === "fim" ? 999 : 0,
-		),
-	);
-
-	return Number.isNaN(parsedDate.getTime()) ? undefined : parsedDate;
-}
-
-function normalizarIntervaloDatas(inicio?: Date, fim?: Date) {
-	if (!inicio || !fim || inicio <= fim) {
-		return { inicio, fim };
-	}
-
-	return { inicio: fim, fim: inicio };
-}
-
 function getTituloErroOperacao(operacao: ActionData["operacao"]): string {
 	if (operacao === "editar") {
 		return "Falha ao atualizar despesa";
@@ -178,22 +114,13 @@ export function meta({}: Route.MetaArgs) {
 export async function loader({
 	request,
 }: Route.LoaderArgs): Promise<LoaderData> {
-	const url = new URL(request.url);
-	const intervaloMesAtual = obterIntervaloMesAtual();
-	const filtroDataInicioRaw = url.searchParams.get("dataInicio");
-	const filtroDataFimRaw = url.searchParams.get("dataFim");
+	const intervaloData = lerPeriodoDaUrl(new URL(request.url));
 
-	const dataInicio =
-		parseDateFromSearchParam(filtroDataInicioRaw, "inicio") ??
-		intervaloMesAtual.inicio;
-	const dataFim =
-		parseDateFromSearchParam(filtroDataFimRaw, "fim") ?? intervaloMesAtual.fim;
-	const intervaloData = normalizarIntervaloDatas(dataInicio, dataFim);
-
-	const [despesas, categorias, contas] = await Promise.all([
+	const [despesas, categorias, contas, coresCategorias] = await Promise.all([
 		listarDespesas(intervaloData),
 		cadastroCategorias.listarNomes(),
 		cadastroContas.listarNomes(),
+		cadastroCategorias.mapaDeCores(),
 	]);
 	const totalValor = despesas.reduce((acc, item) => acc + item.valor, 0);
 
@@ -203,12 +130,9 @@ export async function loader({
 		totalValor,
 		categorias,
 		contas,
-		filtroDataInicio: formatarDataInput(
-			intervaloData.inicio ?? intervaloMesAtual.inicio,
-		),
-		filtroDataFim: formatarDataInput(
-			intervaloData.fim ?? intervaloMesAtual.fim,
-		),
+		coresCategorias,
+		filtroDataInicio: formatarDataInput(intervaloData.inicio),
+		filtroDataFim: formatarDataInput(intervaloData.fim),
 	};
 }
 
@@ -327,6 +251,7 @@ export default function Despesas() {
 		totalValor,
 		categorias,
 		contas,
+		coresCategorias,
 		filtroDataInicio,
 		filtroDataFim,
 	} = useLoaderData<typeof loader>();
@@ -341,7 +266,9 @@ export default function Despesas() {
 	const [selectedDespesaId, setSelectedDespesaId] = useState<string | null>(
 		null,
 	);
-	const despesasDataTable = despesas.map(mapDespesaParaDataTableRow);
+	const despesasDataTable = despesas.map((despesa) =>
+		mapDespesaParaDataTableRow(despesa, coresCategorias),
+	);
 	const despesaSelecionada = getDespesaSelecionada(despesas, selectedDespesaId);
 
 	useEffect(() => {
@@ -460,12 +387,14 @@ export default function Despesas() {
 
 function mapDespesaParaDataTableRow(
 	despesa: Awaited<ReturnType<typeof listarDespesas>>[number],
+	coresCategorias: Record<string, number>,
 ): DespesaDataTableRow {
 	return {
 		id: despesa.id,
 		data: new Date(despesa.data).toISOString(),
 		nome: despesa.nome,
 		categoria: despesa.categoria,
+		corCategoria: coresCategorias[despesa.categoria] ?? null,
 		conta: despesa.conta,
 		fatura: despesa.fatura,
 		valor: despesa.valor,

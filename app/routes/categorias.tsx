@@ -25,6 +25,7 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
 			rotulo='categoria'
 			placeholder='Ex: Supermercado'
 			itens={loaderData.itens}
+			comCor
 		/>
 	);
 }

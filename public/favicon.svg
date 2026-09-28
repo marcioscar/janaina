@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Versão do logo para 16–32 px: barras mais grossas e moeda maior para não sumirem. -->
+  <style>
+    .bloco { fill: #561530; } .barra { fill: #f3cfcb; } .moeda { fill: #7fb394; stroke: #561530; }
+    @media (prefers-color-scheme: dark) {
+      .bloco { fill: #f3cfcb; } .barra { fill: #561530; } .moeda { fill: #3e6a50; stroke: #f3cfcb; }
+    }
+  </style>
+  <rect class="bloco" width="64" height="64" rx="14"/>
+  <rect class="barra" x="9" y="38" width="12" height="17" rx="3.5"/>
+  <rect class="barra" x="26" y="30" width="12" height="25" rx="3.5"/>
+  <rect class="barra" x="43" y="22" width="12" height="33" rx="3.5"/>
+  <circle class="moeda" cx="49" cy="11" r="6.5" stroke-width="3"/>
+</svg>

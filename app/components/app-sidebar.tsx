@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router";
-import { LandmarkIcon, ReceiptIcon, TagsIcon, type LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
 import {
 	Sidebar,
 	SidebarContent,
@@ -12,12 +12,19 @@ import {
 	SidebarMenuItem,
 	SidebarRail,
 } from "~/components/ui/sidebar";
+import {
+	IconCartao,
+	IconCategoria,
+	IconDespesa,
+	IconPainel,
+	type IconProps,
+} from "~/components/icones";
 import { MarcaHorizontal, MarcaIcone } from "~/components/marca";
 
 type NavItem = {
 	title: string;
 	href: string;
-	icon: LucideIcon;
+	icon: ComponentType<IconProps>;
 	color: string;
 };
 
@@ -30,14 +37,15 @@ const navGroups: NavGroup[] = [
 	{
 		label: "Financeiro",
 		items: [
-			{ title: "Despesas", href: "/despesas", icon: ReceiptIcon, color: "var(--paleta-1)" },
+			{ title: "Visão geral", href: "/", icon: IconPainel, color: "var(--paleta-1)" },
+			{ title: "Despesas", href: "/despesas", icon: IconDespesa, color: "var(--paleta-2)" },
 		],
 	},
 	{
 		label: "Cadastros",
 		items: [
-			{ title: "Categorias", href: "/categorias", icon: TagsIcon, color: "var(--paleta-4)" },
-			{ title: "Contas", href: "/contas", icon: LandmarkIcon, color: "var(--paleta-5)" },
+			{ title: "Categorias", href: "/categorias", icon: IconCategoria, color: "var(--paleta-4)" },
+			{ title: "Contas", href: "/contas", icon: IconCartao, color: "var(--paleta-5)" },
 		],
 	},
 ];
@@ -57,7 +65,7 @@ export function AppSidebar() {
 			<SidebarHeader>
 				<div className='flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'>
 					<MarcaHorizontal className='group-data-[collapsible=icon]:hidden' />
-					<MarcaIcone className='hidden size-8 group-data-[collapsible=icon]:inline-flex' />
+					<MarcaIcone className='hidden size-8 group-data-[collapsible=icon]:block' />
 				</div>
 			</SidebarHeader>
 

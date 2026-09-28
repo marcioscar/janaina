@@ -27,6 +27,8 @@ model despesas {
 model categorias {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   nome      String   @unique
+  /// Slot de cor 1-8 (--categoria-N em app.css)
+  cor       Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -21,7 +21,16 @@ No test runner or linter is configured yet.
 - `app/root.tsx` holds the HTML `Layout`, the root `App` and the global `ErrorBoundary`.
 - Path alias `~/*` → `app/*`.
 - Layout: `app/root.tsx` wraps every page in a collapsible shadcn sidebar (`app/components/app-sidebar.tsx`). To add a page, add the route in `app/routes.ts` and an entry to `navGroups` in the sidebar.
-- `/` redirects to `/despesas`. The despesas page was ported from the `marcioscar` project's `/contas` page, without the Brassaco feature.
+- `/` is the dashboard (`app/routes/home.tsx`). The despesas page was ported from the `marcioscar` project's `/contas` page, without the Brassaco feature.
+
+## Dashboard
+
+- `app/models/dashboard.server.ts` aggregates in JS over `listarDespesas`. It returns the period total, the total for the previous period of the same length (used for the delta), totals per category, and the last 6 months ending at the period's end month.
+- Charts use the shadcn `chart` component (Recharts) with the theme's `--chart-*` tokens, set per mode through `ChartConfig.theme`. Colors were checked with the dataviz palette validator:
+  - by category: each bar takes its category's own color (see below). The chart is capped at 8 bars, with the rest folded into "Outras" in a neutral color;
+  - by month: emphasis, with the period's month strong and the other months in a context tone. The context tone has low contrast against the card, so every column carries a value label.
+- Period helpers (`lerPeriodoDaUrl`, presets, previous period) live in `app/lib/periodo.ts` and currency/percent formatting in `app/lib/formato.ts`. Both the dashboard and despesas use them. All dates are UTC.
+- `app/components/ui/*` import `cn` from the `cn` package, which is this preset's convention (`app/lib/utils.ts` re-exports it). Keep that.
 
 ## Despesas feature
 
@@ -39,12 +48,24 @@ No test runner or linter is configured yet.
 - `DATABASE_URL` in `.env` (gitignored) points to the `janaina` database on the same Atlas cluster used by the `marcioscar` project.
 - `app/db.server.ts` exports a singleton `db` (PrismaClient). Only import it from `*.server.ts` files, loaders and actions — never from client code.
 - Other env vars: `POCKETBASE_URL`, `POCKETBASE_ADMIN_EMAIL`, `POCKETBASE_ADMIN_PASSWORD`, `POCKETBASE_COLLECTION` and `POCKETBASE_FIELD` (receipt upload), plus `ANTHROPIC_API_KEY` (PDF import). All of them are copied from `marcioscar`.
-- Collections `categorias` and `contas`: nome (unique), createdAt, updatedAt.
+- Collections `categorias` and `contas`: nome (unique), createdAt, updatedAt. `categorias` also has `cor` (Int 1–8).
+- **Category colors** belong to the category, not to a bar's position, so a category keeps the same color in every period and on every screen:
+  - `categorias.cor` is a slot that points to `--categoria-N` in `app/app.css`, with separate values for light and dark;
+  - use `corDaCategoria()` from `app/lib/cores-categoria.ts` to turn a slot into a color;
+  - the 8 hues and their fixed order passed the dataviz palette validator in both modes;
+  - a new category gets the least-used slot, and the color can be changed in `/categorias`;
+  - the colors appear in the dashboard chart, its table view and the despesas table.
+  - Only categorias use colors (`comCor: true` in `criarCadastroSimples`). The contas collection has no `cor` field.
 - Collection `despesas`: nome, categoria, valor, data, comprovante, conta, fatura?, obs, createdAt, updatedAt; indexed on `data` and `categoria`.
 
 ## UI / theme
 
-- **shadcn/ui** configured in `components.json`: style `base-luma` (Base UI primitives, not Radix), base color `mauve`, icons from `lucide-react`.
+- **shadcn/ui** configured in `components.json`: style `base-luma` (Base UI primitives, not Radix), icons from `lucide-react`. The preset's base color was mauve, but the tokens in `app/app.css` have been retuned to the brand: primary bordô `#561530` (rosa `#F3CFCB` in dark mode), slightly rosy neutrals, charts on a bordô→rosa ramp, and the brand green for `--sucesso`.
+- **Brand** (source files in `assets/jana/`):
+  - `app/components/marca.tsx` holds the logo, colored through the `--marca-*` tokens so it flips to a pink tile in dark mode. The coin uses the light green on bordô, because the dark green disappears there.
+  - `public/favicon.svg` is a simplified mark for 16–32 px, with its own dark-mode media query.
+  - The wordmark uses Bricolage Grotesque (`font-brand`).
+- **Icons**: `app/components/icones.tsx` holds the brand icon set (24px grid, 1.75 stroke), used in the sidebar. The lucide icons are forced to the same 1.75 stroke in `app/app.css`.
 - Components go in `~/components/ui`, the `cn()` helper is in `~/lib/utils`.
 - **Tailwind CSS v4** via `@tailwindcss/vite` — there is no `tailwind.config`; all theme tokens (CSS variables in oklch) live in `app/app.css` under `:root` and `.dark`.
 - Dark mode is class-based (`@custom-variant dark (&:is(.dark *))`): add the `dark` class to `<html>` to enable it. It no longer follows `prefers-color-scheme` automatically.

@@ -2,12 +2,14 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "~/components/ui/button";
+import { corDaCategoria } from "~/lib/cores-categoria";
 
 export type DespesaDataTableRow = {
 	id: string;
 	data: string;
 	nome: string;
 	categoria: string;
+	corCategoria: number | null;
 	conta: string;
 	fatura: string | null;
 	valor: number;
@@ -76,6 +78,16 @@ export const despesasColumns: ColumnDef<DespesaDataTableRow>[] = [
 			sortableHeader("Categoria", column.getIsSorted(), () =>
 				column.toggleSorting(column.getIsSorted() === "asc"),
 			),
+		cell: ({ row }) => (
+			<span className='flex items-center gap-2'>
+				<span
+					aria-hidden
+					className='size-2.5 shrink-0 rounded-full'
+					style={{ background: corDaCategoria(row.original.corCategoria) }}
+				/>
+				{row.original.categoria}
+			</span>
+		),
 	},
 	{
 		accessorKey: "conta",
