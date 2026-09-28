@@ -46,6 +46,18 @@ No test runner or linter is configured yet.
 - Both lookups share `app/models/cadastro-simples.server.ts`: `criarCadastroSimples()` handles list, create, rename and delete, and `executarAcaoCadastro()` is the route action. The screen is the shared `app/components/cadastro-simples-page.tsx`. The rules: names are unique ignoring case and accents, renaming also updates the despesas, and an entry still used by despesas can't be deleted. To add another lookup of this kind, create a Prisma model with the same shape and reuse these pieces.
 - The table uses `@tanstack/react-table` **v8**. Keep it on v8, because v9 changed the API.
 
+## Access (password only)
+
+- Everything except `/login` requires a single password in `APP_SENHA`, with no user accounts. The check is a server `middleware` in `app/root.tsx`, so it covers actions (create, edit, delete) as well as page loads. `/login` renders without the sidebar.
+- `app/sessao.server.ts`:
+  - The session is a signed `httpOnly` cookie (`janaina_sessao`) valid for 7 days.
+  - The signing secret is derived from `APP_SENHA`, so changing the password logs everyone out.
+  - The password is compared in constant time, and a wrong attempt waits 1 second.
+  - The `voltar` redirect only accepts internal paths.
+  - If `APP_SENHA` is not set, nobody can log in (fail closed).
+- Logout is a POST to `/logout` (the "Sair" button in the sidebar footer).
+- Read env vars with `variavelAmbiente()` (`app/lib/env.server.ts`), which strips surrounding quotes because Portainer may keep the quotes from `.env`.
+
 ## Database
 
 - **MongoDB Atlas via Prisma 6** (`provider = "mongodb"`), schema in `prisma/schema.prisma`.

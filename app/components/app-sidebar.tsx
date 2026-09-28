@@ -1,8 +1,10 @@
-import { Link, useLocation } from "react-router";
+import { Form, Link, useLocation } from "react-router";
+import { LogOutIcon } from "lucide-react";
 import type { ComponentType } from "react";
 import {
 	Sidebar,
 	SidebarContent,
+	SidebarFooter,
 	SidebarGroup,
 	SidebarGroupContent,
 	SidebarGroupLabel,
@@ -91,6 +93,18 @@ export function AppSidebar() {
 					</SidebarGroup>
 				))}
 			</SidebarContent>
+			<SidebarFooter>
+				<Form method='post' action='/logout'>
+					<SidebarMenu>
+						<SidebarMenuItem>
+							<SidebarMenuButton type='submit' tooltip='Sair' className='text-muted-foreground'>
+								<LogOutIcon />
+								<span>Sair</span>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					</SidebarMenu>
+				</Form>
+			</SidebarFooter>
 			<SidebarRail />
 		</Sidebar>
 	);

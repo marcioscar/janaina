@@ -10,6 +10,8 @@ services:
     image: marcioscar/janaina-financeiro:latest
 
     environment:
+      # Senha única para entrar no app (sem usuário). Trocar a senha desconecta todo mundo.
+      - APP_SENHA=${APP_SENHA}
       - DATABASE_URL=${DATABASE_URL}
       # PocketBase (upload de comprovantes)
       - POCKETBASE_URL=${POCKETBASE_URL}
