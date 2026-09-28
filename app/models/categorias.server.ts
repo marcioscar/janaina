@@ -2,7 +2,7 @@ import { criarCadastroSimples } from "./cadastro-simples.server";
 
 export const categorias = criarCadastroSimples({
 	modelo: "categorias",
-	campoDespesa: "categoria",
+	vinculos: [{ colecao: "despesas", campo: "categoria" }],
 	rotulo: "categoria",
 	comCor: true,
 });

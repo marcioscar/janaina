@@ -36,6 +36,14 @@ No test runner or linter is configured yet.
 - Period helpers (`lerPeriodoDaUrl`, presets, previous period) live in `app/lib/periodo.ts` and currency/percent formatting in `app/lib/formato.ts`. Both the dashboard and despesas use them. All dates are UTC.
 - `app/components/ui/*` import `cn` from the `cn` package, which is this preset's convention (`app/lib/utils.ts` re-exports it). Keep that.
 
+## Receitas (income)
+
+- `/receitas` lists income for a period and lets you create, edit and delete it through a single `ReceitaDialog`.
+- `app/models/receitas.server.ts` uses plain Prisma `findMany` with a date range. The `$runCommandRaw` workaround is only needed for despesas.
+- Income has its own categories (`categoriasReceita`, managed at `/categorias-receita`, with colors) and shares the accounts (`contas`) with despesas.
+- `criarCadastroSimples` takes `vinculos` (the collections and fields that store the name). Renaming an account updates both despesas and receitas, and deleting one counts uses in both.
+- The dashboard shows cards for saldo, recebido and gasto, plus an "Entradas e saídas" chart with income and expenses side by side per month. The tooltip shows the month's saldo. Its colors (brand green vs theme bordô/rosa) were checked with the palette validator.
+
 ## Despesas feature
 
 - `app/routes/despesas.tsx`: the loader filters by date range (`?dataInicio=&dataFim=`, defaults to the current month). A single action dispatches on the `intent` form field: `criar` (the default), `editar`, `excluir` or `importar-pdf`.
@@ -72,7 +80,8 @@ No test runner or linter is configured yet.
 - `DATABASE_URL` in `.env` (gitignored) points to the `janaina` database on the same Atlas cluster used by the `marcioscar` project.
 - `app/db.server.ts` exports a singleton `db` (PrismaClient). Only import it from `*.server.ts` files, loaders and actions — never from client code.
 - Other env vars: `POCKETBASE_URL`, `POCKETBASE_ADMIN_EMAIL`, `POCKETBASE_ADMIN_PASSWORD`, `POCKETBASE_COLLECTION` and `POCKETBASE_FIELD` (receipt upload), plus `ANTHROPIC_API_KEY` (PDF import). All of them are copied from `marcioscar`.
-- Collections `categorias` and `contas`: nome (unique), createdAt, updatedAt. `categorias` also has `cor` (Int 1–8).
+- Collections `categorias`, `categoriasReceita` and `contas`: nome (unique), createdAt, updatedAt. Both category collections also have `cor` (Int 1–8).
+- Collection `receitas`: nome, categoria, valor, data, conta, comprovante, obs, createdAt, updatedAt.
 - **Category colors** belong to the category, not to a bar's position, so a category keeps the same color in every period and on every screen:
   - `categorias.cor` is a slot that points to `--categoria-N` in `app/app.css`, with separate values for light and dark;
   - use `corDaCategoria()` from `app/lib/cores-categoria.ts` to turn a slot into a color;

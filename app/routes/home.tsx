@@ -10,8 +10,9 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { CategoriasChart } from "~/components/dashboard/categorias-chart";
+import { FluxoChart } from "~/components/dashboard/fluxo-chart";
 import { MesesChart } from "~/components/dashboard/meses-chart";
-import { BOTAO_NOVO_CLASS } from "~/lib/botoes";
+import { BOTAO_NOVO_CLASS, BOTAO_RECEITA_CLASS } from "~/lib/botoes";
 import { corDaCategoria } from "~/lib/cores-categoria";
 import { formatarMoeda, formatarPercentual } from "~/lib/formato";
 import { formatarDataInput, lerPeriodoDaUrl, presetsDePeriodo } from "~/lib/periodo";
@@ -64,7 +65,7 @@ function Variacao({ atual, anterior }: { atual: number; anterior: number }) {
 		: `${formatarPercentual(Math.abs(variacao))} ${variacao > 0 ? "acima" : "abaixo"} do período anterior`;
 
 	return (
-		<p className='flex items-center gap-1.5 text-sm'>
+		<p className='flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm'>
 			<Icone
 				aria-hidden
 				className={cn(
@@ -78,14 +79,24 @@ function Variacao({ atual, anterior }: { atual: number; anterior: number }) {
 	);
 }
 
-function StatTile({ rotulo, valor, detalhe }: { rotulo: string; valor: string; detalhe?: string }) {
+/** Receitas − despesas. O sinal e o ícone dizem se sobrou ou faltou; a cor só acompanha. */
+function Saldo({ receitas, despesas }: { receitas: number; despesas: number }) {
+	const saldo = receitas - despesas;
+	const positivo = saldo >= 0;
+	const Icone = positivo ? TrendingUpIcon : TrendingDownIcon;
 	return (
-		<Card size='sm'>
+		<Card>
 			<CardHeader>
-				<CardDescription>{rotulo}</CardDescription>
-				<CardTitle className='truncate text-2xl font-semibold'>{valor}</CardTitle>
-				{detalhe && <p className='text-muted-foreground truncate text-sm'>{detalhe}</p>}
+				<CardDescription>Saldo do período</CardDescription>
+				<CardTitle className='text-3xl font-semibold tracking-tight'>{formatarMoeda(saldo)}</CardTitle>
 			</CardHeader>
+			<CardContent>
+				<p className='flex items-center gap-1.5 text-sm'>
+					<Icone aria-hidden className={cn("size-4", positivo ? "text-sucesso" : "text-destructive")} />
+					<span className='text-foreground font-medium'>{positivo ? "Sobrou" : "Faltou"}</span>
+					<span className='text-muted-foreground'>receitas menos despesas</span>
+				</p>
+			</CardContent>
 		</Card>
 	);
 }
@@ -95,6 +106,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 		total,
 		quantidade,
 		totalPeriodoAnterior,
+		totalReceitas,
+		quantidadeReceitas,
 		porCategoria,
 		porMes,
 		seriesMensais,
@@ -116,14 +129,24 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 					<h1 className='text-2xl font-bold'>Visão geral</h1>
 					<p className='text-muted-foreground text-sm'>{formatarPeriodo(dataInicio, dataFim)}</p>
 				</div>
-				<Button
-					variant='outline'
-					className={BOTAO_NOVO_CLASS}
-					render={<Link to='/despesas' />}
-					nativeButton={false}>
-					<PlusIcon />
-					Lançar despesa
-				</Button>
+				<div className='flex flex-wrap gap-2'>
+					<Button
+						variant='outline'
+						className={BOTAO_RECEITA_CLASS}
+						render={<Link to='/receitas' />}
+						nativeButton={false}>
+						<PlusIcon />
+						Lançar receita
+					</Button>
+					<Button
+						variant='outline'
+						className={BOTAO_NOVO_CLASS}
+						render={<Link to='/despesas' />}
+						nativeButton={false}>
+						<PlusIcon />
+						Lançar despesa
+					</Button>
+				</div>
 			</div>
 
 			{/* Filtro único acima de tudo que ele afeta: presets primeiro, intervalo livre depois. */}
@@ -171,32 +194,36 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
 			{/* Na troca de período os dados antigos ficam visíveis, esmaecidos, sem pular o layout. */}
 			<div className={cn("grid gap-6 transition-opacity", carregando && "opacity-60")}>
-				<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
-					<Card className='md:col-span-2'>
+				<div className='grid gap-4 md:grid-cols-3'>
+					<Saldo receitas={totalReceitas} despesas={total} />
+					<Card>
 						<CardHeader>
-							<CardDescription>Total gasto no período</CardDescription>
-							<CardTitle className='text-5xl font-semibold tracking-tight'>
-								{formatarMoeda(total)}
+							<CardDescription>Recebido</CardDescription>
+							<CardTitle className='text-3xl font-semibold tracking-tight'>
+								{formatarMoeda(totalReceitas)}
 							</CardTitle>
 						</CardHeader>
-						<CardContent>
-							<Variacao atual={total} anterior={totalPeriodoAnterior} />
+						<CardContent className='text-muted-foreground text-sm'>
+							{quantidadeReceitas > 0
+								? `${quantidadeReceitas.toLocaleString("pt-BR")} receita(s) no período`
+								: "Nenhuma receita no período"}
 						</CardContent>
 					</Card>
-					<StatTile
-						rotulo='Despesas lançadas'
-						valor={quantidade.toLocaleString("pt-BR")}
-						detalhe={quantidade > 0 ? `Média de ${formatarMoeda(total / quantidade)}` : undefined}
-					/>
-					<StatTile
-						rotulo='Maior categoria'
-						valor={maiorCategoria?.categoria ?? "—"}
-						detalhe={
-							maiorCategoria
-								? `${formatarMoeda(maiorCategoria.valor)} · ${formatarPercentual(maiorCategoria.participacao)} do total`
-								: undefined
-						}
-					/>
+					<Card>
+						<CardHeader>
+							<CardDescription>Gasto</CardDescription>
+							<CardTitle className='text-3xl font-semibold tracking-tight'>{formatarMoeda(total)}</CardTitle>
+						</CardHeader>
+						<CardContent className='grid gap-1'>
+							<Variacao atual={total} anterior={totalPeriodoAnterior} />
+							{maiorCategoria && (
+								<p className='text-muted-foreground truncate text-sm'>
+									{quantidade.toLocaleString("pt-BR")} despesa(s) · maior: {maiorCategoria.categoria} (
+									{formatarPercentual(maiorCategoria.participacao)})
+								</p>
+							)}
+						</CardContent>
+					</Card>
 				</div>
 
 				<div className='grid gap-4 lg:grid-cols-5'>
@@ -267,6 +294,16 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 						</CardContent>
 					</Card>
 				</div>
+
+				<Card>
+					<CardHeader>
+						<CardTitle>Entradas e saídas</CardTitle>
+						<CardDescription>Receitas e despesas nos últimos 6 meses</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<FluxoChart meses={porMes} />
+					</CardContent>
+				</Card>
 			</div>
 		</main>
 	);

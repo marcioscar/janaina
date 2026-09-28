@@ -19,6 +19,7 @@ import {
 	IconCategoria,
 	IconDespesa,
 	IconPainel,
+	IconReceita,
 	type IconProps,
 } from "~/components/icones";
 import { MarcaHorizontal, MarcaIcone } from "~/components/marca";
@@ -41,13 +42,20 @@ const navGroups: NavGroup[] = [
 		items: [
 			{ title: "Visão geral", href: "/", icon: IconPainel, color: "var(--paleta-1)" },
 			{ title: "Despesas", href: "/despesas", icon: IconDespesa, color: "var(--paleta-2)" },
+			{ title: "Receitas", href: "/receitas", icon: IconReceita, color: "var(--paleta-5)" },
 		],
 	},
 	{
 		label: "Cadastros",
 		items: [
-			{ title: "Categorias", href: "/categorias", icon: IconCategoria, color: "var(--paleta-4)" },
-			{ title: "Contas", href: "/contas", icon: IconCartao, color: "var(--paleta-5)" },
+			{ title: "Categorias de despesa", href: "/categorias", icon: IconCategoria, color: "var(--paleta-4)" },
+			{
+				title: "Categorias de receita",
+				href: "/categorias-receita",
+				icon: IconCategoria,
+				color: "var(--paleta-3)",
+			},
+			{ title: "Contas", href: "/contas", icon: IconCartao, color: "var(--paleta-6)" },
 		],
 	},
 ];
@@ -56,7 +64,8 @@ function isActivePath(currentPath: string, href: string): boolean {
 	if (href === "/") {
 		return currentPath === "/";
 	}
-	return currentPath.startsWith(href);
+	// Segmento inteiro: /categorias não pode marcar /categorias-receita como ativo.
+	return currentPath === href || currentPath.startsWith(`${href}/`);
 }
 
 export function AppSidebar() {

@@ -3,14 +3,21 @@ import { db } from "~/db.server";
 import { CORES_CATEGORIA, slotValido } from "~/lib/cores-categoria";
 
 /**
- * Cadastros de um campo só (nome) cujo valor as despesas guardam como texto:
- * categorias -> despesas.categoria, contas -> despesas.conta.
+ * Cadastros de um campo só (nome) cujo valor os lançamentos guardam como texto:
+ * categorias -> despesas.categoria, categoriasReceita -> receitas.categoria,
+ * contas -> despesas.conta e receitas.conta.
  */
+type Vinculo = {
+	/** Collection de lançamentos que guarda o nome. */
+	colecao: "despesas" | "receitas";
+	campo: "categoria" | "conta";
+};
+
 type Config = {
-	/** Collection no Prisma. As duas têm o mesmo formato (id, nome, datas). */
-	modelo: "categorias" | "contas";
-	/** Campo de despesas que guarda o nome. */
-	campoDespesa: "categoria" | "conta";
+	/** Collection no Prisma. Todas têm o mesmo formato (id, nome, datas; cor quando comCor). */
+	modelo: "categorias" | "categoriasReceita" | "contas";
+	/** Onde o nome é usado; renomear atualiza e apagar é bloqueado em todos. */
+	vinculos: Vinculo[];
 	/** Rótulo em minúsculas para mensagens, ex: "categoria". */
 	rotulo: string;
 	/** Guarda um slot de cor (1-8) por item. Só categorias têm o campo `cor`. */
@@ -22,7 +29,8 @@ export type ItemCadastro = {
 	nome: string;
 	/** Slot de cor, ou null quando o cadastro não usa cor. */
 	cor: number | null;
-	totalDespesas: number;
+	/** Quantos lançamentos (em todos os vínculos) usam este nome. */
+	totalUsos: number;
 };
 
 function compararNome(a: string, b: string): number {
@@ -37,10 +45,19 @@ function normalizarNome(nome: string): string {
 	return texto;
 }
 
-export function criarCadastroSimples({ modelo, campoDespesa, rotulo, comCor = false }: Config) {
+export function criarCadastroSimples({ modelo, vinculos, rotulo, comCor = false }: Config) {
 	// Os dois delegates têm a mesma forma; o cast só unifica o tipo para o TypeScript.
 	const tabela = db[modelo] as typeof db.categorias;
-	const filtroDespesas = (nome: string) => ({ [campoDespesa]: nome });
+	// despesas e receitas têm categoria/conta com o mesmo tipo; o cast só unifica o delegate.
+	const lancamentos = (colecao: Vinculo["colecao"]) => db[colecao] as typeof db.despesas;
+	const filtro = (campo: Vinculo["campo"], nome: string) => ({ [campo]: nome });
+
+	async function contarUsos(nome: string): Promise<number> {
+		const totais = await Promise.all(
+			vinculos.map(({ colecao, campo }) => lancamentos(colecao).count({ where: filtro(campo, nome) })),
+		);
+		return totais.reduce((acc, total) => acc + total, 0);
+	}
 	// Pedir `cor` numa collection que não tem o campo é erro no Prisma, então só quando comCor.
 	const camposLista = { id: true, nome: true, ...(comCor ? { cor: true } : {}) } as const;
 
@@ -81,20 +98,27 @@ export function criarCadastroSimples({ modelo, campoDespesa, rotulo, comCor = fa
 
 		/** Itens com a quantidade de despesas que usam cada um. */
 		async listar(): Promise<ItemCadastro[]> {
-			const [itens, usos] = await Promise.all([
+			const [itens, ...usosPorVinculo] = await Promise.all([
 				tabela.findMany({ select: camposLista }),
-				db.despesas.groupBy({ by: [campoDespesa], _count: { _all: true } }),
+				...vinculos.map(({ colecao, campo }) =>
+					lancamentos(colecao).groupBy({ by: [campo], _count: { _all: true } }),
+				),
 			]);
-			const totalPorNome = new Map(
-				usos.map((uso) => [(uso as Record<string, unknown>)[campoDespesa] as string, uso._count._all]),
-			);
+			const totalPorNome = new Map<string, number>();
+			usosPorVinculo.forEach((usos, indice) => {
+				const campo = vinculos[indice].campo;
+				for (const uso of usos) {
+					const nome = (uso as Record<string, unknown>)[campo] as string;
+					totalPorNome.set(nome, (totalPorNome.get(nome) ?? 0) + uso._count._all);
+				}
+			});
 
 			return itens
 				.map((item) => ({
 					id: item.id,
 					nome: item.nome,
 					cor: comCor ? (item.cor ?? null) : null,
-					totalDespesas: totalPorNome.get(item.nome) ?? 0,
+					totalUsos: totalPorNome.get(item.nome) ?? 0,
 				}))
 				.sort((a, b) => compararNome(a.nome, b.nome));
 		},
@@ -105,7 +129,7 @@ export function criarCadastroSimples({ modelo, campoDespesa, rotulo, comCor = fa
 			await tabela.create({ data: { nome, ...(comCor ? { cor: await proximaCor() } : {}) } });
 		},
 
-		/** Renomeia (e troca a cor, se houver) e atualiza as despesas que guardam o nome antigo. */
+		/** Renomeia (e troca a cor, se houver) e atualiza os lançamentos que guardam o nome antigo. */
 		async renomear(id: string, nomeInformado: string, cor?: number): Promise<void> {
 			const nome = normalizarNome(nomeInformado);
 			const atual = await buscar(id, "edicao");
@@ -121,7 +145,9 @@ export function criarCadastroSimples({ modelo, campoDespesa, rotulo, comCor = fa
 			await garantirNomeDisponivel(nome, id);
 			await db.$transaction([
 				tabela.update({ where: { id }, data: { nome, ...(novaCor !== undefined ? { cor: novaCor } : {}) } }),
-				db.despesas.updateMany({ where: filtroDespesas(atual.nome), data: filtroDespesas(nome) }),
+				...vinculos.map(({ colecao, campo }) =>
+					lancamentos(colecao).updateMany({ where: filtro(campo, atual.nome), data: filtro(campo, nome) }),
+				),
 			]);
 		},
 
@@ -136,13 +162,13 @@ export function criarCadastroSimples({ modelo, campoDespesa, rotulo, comCor = fa
 			);
 		},
 
-		/** Só apaga itens sem despesas, para nenhuma despesa ficar apontando para um nome que sumiu. */
+		/** Só apaga itens sem lançamentos, para nenhum lançamento ficar apontando para um nome que sumiu. */
 		async excluir(id: string): Promise<void> {
 			const atual = await buscar(id, "exclusao");
-			const emUso = await db.despesas.count({ where: filtroDespesas(atual.nome) });
+			const emUso = await contarUsos(atual.nome);
 			if (emUso > 0) {
 				throw new Error(
-					`A ${rotulo} "${atual.nome}" tem ${emUso} despesa(s). Troque a ${rotulo} delas antes de apagar.`,
+					`A ${rotulo} "${atual.nome}" tem ${emUso} lançamento(s). Troque a ${rotulo} deles antes de apagar.`,
 				);
 			}
 

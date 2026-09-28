@@ -40,6 +40,8 @@ type Props = {
 	itens: ItemCadastro[];
 	/** Mostra a cor de cada item e deixa escolher outra na edição (categorias). */
 	comCor?: boolean;
+	/** Cabeçalho da coluna de uso, ex: "Despesas", "Receitas", "Lançamentos". */
+	rotuloUsos: string;
 };
 
 function parseString(raw: FormDataEntryValue | null): string {
@@ -59,7 +61,14 @@ function getTituloErroOperacao(operacao: CadastroActionData["operacao"], rotulo:
 }
 
 /** Tela de cadastro de um campo só (nome): lista, adicionar, renomear e apagar. */
-export function CadastroSimplesPage({ titulo, rotulo, placeholder, itens, comCor = false }: Props) {
+export function CadastroSimplesPage({
+	titulo,
+	rotulo,
+	placeholder,
+	itens,
+	comCor = false,
+	rotuloUsos,
+}: Props) {
 	const actionData = useActionData<CadastroActionData>();
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
@@ -130,7 +139,7 @@ export function CadastroSimplesPage({ titulo, rotulo, placeholder, itens, comCor
 							<TableHeader>
 								<TableRow>
 									<TableHead>Nome</TableHead>
-									<TableHead className='text-right'>Despesas</TableHead>
+									<TableHead className='text-right'>{rotuloUsos}</TableHead>
 									<TableHead className='w-0' />
 								</TableRow>
 							</TableHeader>
@@ -151,7 +160,7 @@ export function CadastroSimplesPage({ titulo, rotulo, placeholder, itens, comCor
 												</span>
 											</TableCell>
 											<TableCell className='text-muted-foreground text-right tabular-nums'>
-												{item.totalDespesas}
+												{item.totalUsos}
 											</TableCell>
 											<TableCell>
 												<Button
@@ -221,9 +230,9 @@ export function CadastroSimplesPage({ titulo, rotulo, placeholder, itens, comCor
 								</div>
 							</fieldset>
 						)}
-						{itemEmEdicao && itemEmEdicao.totalDespesas > 0 && (
+						{itemEmEdicao && itemEmEdicao.totalUsos > 0 && (
 							<p className='text-muted-foreground text-xs'>
-								As {itemEmEdicao.totalDespesas} despesa(s) desta {rotulo} passam a usar o
+								Os {itemEmEdicao.totalUsos} lançamento(s) desta {rotulo} passam a usar o
 								novo nome.
 							</p>
 						)}

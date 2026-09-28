@@ -39,3 +39,29 @@ model contas {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model receitas {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome        String
+  categoria   String
+  valor       Float
+  data        DateTime
+  comprovante String
+  conta       String
+  obs         String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([data])
+  @@index([categoria])
+}
+
+/// Categorias de receita (Salário, Freelance...), separadas das de despesa.
+model categoriasReceita {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome      String   @unique
+  /// Slot de cor 1-8 (--categoria-N em app.css)
+  cor       Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

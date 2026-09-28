@@ -1,5 +1,6 @@
 import { categorias as cadastroCategorias } from "~/models/categorias.server";
 import { listarDespesas } from "~/models/despesas.server";
+import { listarReceitas } from "~/models/receitas.server";
 import { CORES_CATEGORIA, slotValido } from "~/lib/cores-categoria";
 import { intervaloDoMes, periodoAnterior, type Intervalo } from "~/lib/periodo";
 
@@ -30,11 +31,16 @@ export type TotalMes = {
 	destaque: boolean;
 	/** Valor de cada série do mês, pela chave da série. */
 	valores: Record<string, number>;
+	/** Total de receitas do mês. */
+	receitas: number;
 };
 
 export type ResumoDashboard = {
+	/** Total de despesas do período. */
 	total: number;
 	quantidade: number;
+	totalReceitas: number;
+	quantidadeReceitas: number;
 	totalPeriodoAnterior: number;
 	porCategoria: TotalCategoria[];
 	porMes: TotalMes[];
@@ -98,12 +104,15 @@ export async function obterResumoDashboard(periodo: Intervalo): Promise<ResumoDa
 		fim: intervaloDoMes(periodo.fim).fim,
 	};
 
-	const [despesas, despesasAnteriores, despesasHistorico, cores] = await Promise.all([
-		listarDespesas(periodo),
-		listarDespesas(periodoAnterior(periodo)),
-		listarDespesas(historico),
-		cadastroCategorias.mapaDeCores(),
-	]);
+	const [despesas, despesasAnteriores, despesasHistorico, cores, receitas, receitasHistorico] =
+		await Promise.all([
+			listarDespesas(periodo),
+			listarDespesas(periodoAnterior(periodo)),
+			listarDespesas(historico),
+			cadastroCategorias.mapaDeCores(),
+			listarReceitas(periodo),
+			listarReceitas(historico),
+		]);
 
 	const total = somar(despesas);
 
@@ -143,17 +152,26 @@ export async function obterResumoDashboard(periodo: Intervalo): Promise<ResumoDa
 		const chave = chavePorCategoria.get(despesa.categoria || "Sem categoria") ?? CHAVE_OUTRAS;
 		valores[chave] = (valores[chave] ?? 0) + despesa.valor;
 	}
+	const receitasPorMes = new Map<string, number>();
+	for (const receita of receitasHistorico) {
+		const chave = chaveDoMes(receita.data);
+		receitasPorMes.set(chave, (receitasPorMes.get(chave) ?? 0) + receita.valor);
+	}
+
 	const mesDestaque = chaveDoMes(periodo.fim);
 	const porMes = [...meses.entries()].map(([mes, valores]) => ({
 		mes,
 		valor: Object.values(valores).reduce((acc, valor) => acc + valor, 0),
 		destaque: mes === mesDestaque,
 		valores,
+		receitas: receitasPorMes.get(mes) ?? 0,
 	}));
 
 	return {
 		total,
 		quantidade: despesas.length,
+		totalReceitas: somar(receitas),
+		quantidadeReceitas: receitas.length,
 		totalPeriodoAnterior: somar(despesasAnteriores),
 		porCategoria,
 		porMes,

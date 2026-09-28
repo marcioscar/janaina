@@ -25,6 +25,7 @@ export default function Contas({ loaderData }: Route.ComponentProps) {
 			rotulo='conta'
 			placeholder='Ex: Cartão Nubank'
 			itens={loaderData.itens}
+			rotuloUsos='Lançamentos'
 		/>
 	);
 }

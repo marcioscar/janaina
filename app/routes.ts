@@ -9,7 +9,9 @@ export default [
   layout("routes/protegido.tsx", [
     index("routes/home.tsx"),
     route("despesas", "routes/despesas.tsx"),
+    route("receitas", "routes/receitas.tsx"),
     route("categorias", "routes/categorias.tsx"),
+    route("categorias-receita", "routes/categorias-receita.tsx"),
     route("contas", "routes/contas.tsx"),
   ]),
 ] satisfies RouteConfig;

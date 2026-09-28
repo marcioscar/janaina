@@ -5,3 +5,5 @@ export const BOTAO_EDITAR_CLASS =
 	"border-paleta-2/30 bg-paleta-2/10 text-paleta-2 hover:bg-paleta-2/20 hover:text-paleta-2";
 export const BOTAO_IMPORTAR_CLASS =
 	"border-paleta-6/30 bg-paleta-6/10 text-paleta-6 hover:bg-paleta-6/20 hover:text-paleta-6";
+export const BOTAO_RECEITA_CLASS =
+	"border-paleta-5/30 bg-paleta-5/10 text-paleta-5 hover:bg-paleta-5/20 hover:text-paleta-5";
