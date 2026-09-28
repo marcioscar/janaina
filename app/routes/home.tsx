@@ -91,8 +91,17 @@ function StatTile({ rotulo, valor, detalhe }: { rotulo: string; valor: string; d
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-	const { total, quantidade, totalPeriodoAnterior, porCategoria, porMes, dataInicio, dataFim, presets } =
-		loaderData;
+	const {
+		total,
+		quantidade,
+		totalPeriodoAnterior,
+		porCategoria,
+		porMes,
+		seriesMensais,
+		dataInicio,
+		dataFim,
+		presets,
+	} = loaderData;
 	const navigation = useNavigation();
 	const carregando = navigation.state === "loading" && navigation.location.pathname === "/";
 	const maiorCategoria = porCategoria[0];
@@ -191,7 +200,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 				</div>
 
 				<div className='grid gap-4 lg:grid-cols-5'>
-					<Card className='lg:col-span-3'>
+					<Card className='lg:col-span-2'>
 						<CardHeader>
 							<CardTitle>Despesas por categoria</CardTitle>
 							<CardDescription>Quanto foi gasto em cada categoria no período</CardDescription>
@@ -248,13 +257,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 						</CardContent>
 					</Card>
 
-					<Card className='lg:col-span-2'>
+					<Card className='lg:col-span-3'>
 						<CardHeader>
 							<CardTitle>Últimos 6 meses</CardTitle>
-							<CardDescription>Total por mês, com o mês do período em destaque</CardDescription>
+							<CardDescription>Gasto por mês, dividido por categoria</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<MesesChart meses={porMes} />
+							<MesesChart meses={porMes} series={seriesMensais} />
 						</CardContent>
 					</Card>
 				</div>

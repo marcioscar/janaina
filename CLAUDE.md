@@ -28,7 +28,11 @@ No test runner or linter is configured yet.
 - `app/models/dashboard.server.ts` aggregates in JS over `listarDespesas`. It returns the period total, the total for the previous period of the same length (used for the delta), totals per category, and the last 6 months ending at the period's end month.
 - Charts use the shadcn `chart` component (Recharts) with the theme's `--chart-*` tokens, set per mode through `ChartConfig.theme`. Colors were checked with the dataviz palette validator:
   - by category: each bar takes its category's own color (see below). The chart is capped at 8 bars, with the rest folded into "Outras" in a neutral color;
-  - by month: emphasis, with the period's month strong and the other months in a context tone. The context tone has low contrast against the card, so every column carries a value label.
+  - by month: columns stacked by category (`escolherSeries` in `dashboard.server.ts`):
+    - at most 7 categories get their own layer (the biggest spenders in the 6-month window) and the rest go into "Outras";
+    - a category whose color slot is already taken by a bigger one also goes into "Outras", so no two layers share a color;
+    - layers stack in palette order, which is the order the validator checked for neighboring colors;
+    - there is a 2px card-colored gap between layers, the total sits above each column, and the period's month is bold.
 - Period helpers (`lerPeriodoDaUrl`, presets, previous period) live in `app/lib/periodo.ts` and currency/percent formatting in `app/lib/formato.ts`. Both the dashboard and despesas use them. All dates are UTC.
 - `app/components/ui/*` import `cn` from the `cn` package, which is this preset's convention (`app/lib/utils.ts` re-exports it). Keep that.
 

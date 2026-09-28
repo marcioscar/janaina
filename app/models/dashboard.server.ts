@@ -1,5 +1,6 @@
 import { categorias as cadastroCategorias } from "~/models/categorias.server";
 import { listarDespesas } from "~/models/despesas.server";
+import { CORES_CATEGORIA, slotValido } from "~/lib/cores-categoria";
 import { intervaloDoMes, periodoAnterior, type Intervalo } from "~/lib/periodo";
 
 export type TotalCategoria = {
@@ -12,12 +13,23 @@ export type TotalCategoria = {
 	participacao: number;
 };
 
+/** Uma camada da pilha mensal: uma categoria com cor própria, ou "Outras". */
+export type SerieMensal = {
+	/** Chave do dado no gráfico (ex: "s3", "outras"). */
+	chave: string;
+	rotulo: string;
+	/** Slot de cor; null = neutro ("Outras"). */
+	cor: number | null;
+};
+
 export type TotalMes = {
 	/** Primeiro dia do mês em ISO, para ordenar e formatar no cliente. */
 	mes: string;
 	valor: number;
 	/** O mês em que o período selecionado termina. */
 	destaque: boolean;
+	/** Valor de cada série do mês, pela chave da série. */
+	valores: Record<string, number>;
 };
 
 export type ResumoDashboard = {
@@ -26,6 +38,8 @@ export type ResumoDashboard = {
 	totalPeriodoAnterior: number;
 	porCategoria: TotalCategoria[];
 	porMes: TotalMes[];
+	/** Séries da pilha mensal, na ordem de empilhamento (de baixo para cima). */
+	seriesMensais: SerieMensal[];
 };
 
 const MESES_NO_HISTORICO = 6;
@@ -36,6 +50,46 @@ function somar(despesas: { valor: number }[]): number {
 
 function chaveDoMes(data: Date): string {
 	return intervaloDoMes(data).inicio.toISOString();
+}
+
+const CHAVE_OUTRAS = "outras";
+
+/**
+ * Escolhe as categorias que ganham camada própria no gráfico mensal: as que mais gastaram na
+ * janela, até 7, sem repetir cor (duas categorias podem dividir um slot; a menor vai para
+ * "Outras" para nenhum par de camadas ficar igual). O resto vira "Outras".
+ * Retorna as séries na ordem da paleta, que é a ordem validada para cores vizinhas.
+ */
+function escolherSeries(
+	totaisPorCategoria: Map<string, number>,
+	cores: Record<string, number>,
+): { series: SerieMensal[]; chavePorCategoria: Map<string, string> } {
+	const maxProprias = CORES_CATEGORIA.length - 1;
+	const slotsUsados = new Set<number>();
+	const escolhidas: { categoria: string; cor: number }[] = [];
+
+	for (const [categoria] of [...totaisPorCategoria.entries()].sort((a, b) => b[1] - a[1])) {
+		const cor = cores[categoria];
+		if (escolhidas.length >= maxProprias) break;
+		if (!slotValido(cor) || slotsUsados.has(cor)) continue;
+		slotsUsados.add(cor);
+		escolhidas.push({ categoria, cor });
+	}
+
+	escolhidas.sort((a, b) => a.cor - b.cor);
+	const series: SerieMensal[] = escolhidas.map(({ categoria, cor }) => ({
+		chave: `s${cor}`,
+		rotulo: categoria,
+		cor,
+	}));
+	const chavePorCategoria = new Map(series.map((serie) => [serie.rotulo, serie.chave]));
+
+	const temOutras = [...totaisPorCategoria.keys()].some((categoria) => !chavePorCategoria.has(categoria));
+	if (temOutras) {
+		series.push({ chave: CHAVE_OUTRAS, rotulo: "Outras", cor: null });
+	}
+
+	return { series, chavePorCategoria };
 }
 
 export async function obterResumoDashboard(periodo: Intervalo): Promise<ResumoDashboard> {
@@ -69,19 +123,32 @@ export async function obterResumoDashboard(periodo: Intervalo): Promise<ResumoDa
 		}))
 		.sort((a, b) => b.valor - a.valor);
 
-	const meses = new Map<string, number>();
+	const totaisHistorico = new Map<string, number>();
+	for (const despesa of despesasHistorico) {
+		const nome = despesa.categoria || "Sem categoria";
+		totaisHistorico.set(nome, (totaisHistorico.get(nome) ?? 0) + despesa.valor);
+	}
+	const { series: seriesMensais, chavePorCategoria } = escolherSeries(totaisHistorico, cores);
+
+	const meses = new Map<string, Record<string, number>>();
 	for (let i = MESES_NO_HISTORICO - 1; i >= 0; i--) {
-		meses.set(chaveDoMes(intervaloDoMes(periodo.fim, -i).inicio), 0);
+		meses.set(
+			chaveDoMes(intervaloDoMes(periodo.fim, -i).inicio),
+			Object.fromEntries(seriesMensais.map((serie) => [serie.chave, 0])),
+		);
 	}
 	for (const despesa of despesasHistorico) {
-		const chave = chaveDoMes(despesa.data);
-		meses.set(chave, (meses.get(chave) ?? 0) + despesa.valor);
+		const valores = meses.get(chaveDoMes(despesa.data));
+		if (!valores) continue;
+		const chave = chavePorCategoria.get(despesa.categoria || "Sem categoria") ?? CHAVE_OUTRAS;
+		valores[chave] = (valores[chave] ?? 0) + despesa.valor;
 	}
 	const mesDestaque = chaveDoMes(periodo.fim);
-	const porMes = [...meses.entries()].map(([mes, valor]) => ({
+	const porMes = [...meses.entries()].map(([mes, valores]) => ({
 		mes,
-		valor,
+		valor: Object.values(valores).reduce((acc, valor) => acc + valor, 0),
 		destaque: mes === mesDestaque,
+		valores,
 	}));
 
 	return {
@@ -90,5 +157,6 @@ export async function obterResumoDashboard(periodo: Intervalo): Promise<ResumoDa
 		totalPeriodoAnterior: somar(despesasAnteriores),
 		porCategoria,
 		porMes,
+		seriesMensais,
 	};
 }
