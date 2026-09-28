@@ -1,4 +1,5 @@
-# Stack do Portainer (Docker Swarm) para janaina.quattoracademia.com.
+# Stack do Portainer (Docker Swarm) para janaina.marcioscar.com.br.
+# Ao mudar o domínio, atualize também allowedActionOrigins em react-router.config.ts.
 # Mesmo formato da stack financeiro-quattor: sem porta publicada; o Traefik encaminha pelo
 # domínio até a porta interna 3000 (padrão do react-router-serve).
 # Os valores das variáveis NÃO ficam aqui: preencha em "Environment variables" no Portainer,
@@ -32,11 +33,11 @@ services:
         - "traefik.http.services.janaina-financeiro.loadbalancer.server.port=3000"
 
         # HTTP -> redireciona para HTTPS
-        - "traefik.http.routers.janaina-financeiro-http.rule=Host(`janaina.quattoracademia.com`)"
+        - "traefik.http.routers.janaina-financeiro-http.rule=Host(`janaina.marcioscar.com.br`)"
         - "traefik.http.routers.janaina-financeiro-http.entrypoints=web"
         - "traefik.http.routers.janaina-financeiro-http.middlewares=redirect-to-https@docker"
         # HTTPS
-        - "traefik.http.routers.janaina-financeiro-https.rule=Host(`janaina.quattoracademia.com`)"
+        - "traefik.http.routers.janaina-financeiro-https.rule=Host(`janaina.marcioscar.com.br`)"
         - "traefik.http.routers.janaina-financeiro-https.entrypoints=websecure"
         - "traefik.http.routers.janaina-financeiro-https.tls=true"
         - "traefik.http.routers.janaina-financeiro-https.tls.certresolver=myresolver"
