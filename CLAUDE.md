@@ -109,7 +109,7 @@ No test runner or linter is configured yet.
 ## Deployment
 
 - `Dockerfile` builds with a placeholder `DATABASE_URL` (the build never touches the DB) and runs `react-router-serve` on port 3000. `.dockerignore` keeps `.env` out of the image, and the secrets are supplied at runtime.
-- The app is deployed through Portainer (Docker Swarm) at `https://janaina.marcioscar.com.br`. The stack file is `deploy/portainer-stack.yml`. It follows the same pattern as the other apps: no published port, the Traefik labels route to container port 3000, it joins the external `Quattornet` network, and it references env vars as `${VAR}`. The values are filled in Portainer, without quotes.
+- The app is deployed through Portainer (Docker Swarm) at `https://janaina.marcioscar.com.br`. The stack file is `deploy/portainer-stack.yml`. It follows the same pattern as the other apps: no published port, the Traefik labels route to container port 3000, it joins the external `Quattornet` network, and it references env vars as `${VAR}`. In Portainer the real values are written directly into the stack editor, replacing each `${VAR}`. The "Environment variables" list in Swarm stacks loses its values on every update, while the editor text persists.
 - Release steps:
   1. `docker build --platform linux/amd64 -t marcioscar/janaina-financeiro:latest .`
   2. `docker push marcioscar/janaina-financeiro:latest`

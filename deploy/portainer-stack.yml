@@ -2,8 +2,9 @@
 # Ao mudar o domínio, atualize também allowedActionOrigins em react-router.config.ts.
 # Mesmo formato da stack financeiro-quattor: sem porta publicada; o Traefik encaminha pelo
 # domínio até a porta interna 3000 (padrão do react-router-serve).
-# Os valores das variáveis NÃO ficam aqui: preencha em "Environment variables" no Portainer,
-# sem aspas em volta dos valores.
+# Os valores das variáveis NÃO ficam neste arquivo (ele está no Git). No editor da stack no
+# Portainer, troque cada ${VAR} pelo valor real (ex: - APP_SENHA=minhasenha): em stacks Swarm
+# a lista "Environment variables" perde os valores a cada atualização, o texto do editor não.
 version: "3.8"
 
 services:
