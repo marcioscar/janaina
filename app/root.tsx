@@ -8,13 +8,22 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { AppSidebar } from "~/components/app-sidebar";
+import { MarcaIcone } from "~/components/marca";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "~/components/ui/sidebar";
+import { Toaster } from "~/components/ui/sonner";
+import { TooltipProvider } from "~/components/ui/tooltip";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -22,7 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <TooltipProvider>{children}</TooltipProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -31,7 +40,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-14 items-center gap-2 border-b px-4">
+          <SidebarTrigger />
+          <MarcaIcone className="size-7 md:hidden" />
+          <span className="text-sm font-medium md:hidden">Janaina</span>
+        </header>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-4">
+          <Outlet />
+        </div>
+        <Toaster />
+      </SidebarInset>
+    </SidebarProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

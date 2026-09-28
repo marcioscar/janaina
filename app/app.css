@@ -9,6 +9,14 @@
   --font-heading: var(--font-sans);
   --font-sans: 'Inter Variable', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-paleta-1: var(--paleta-1);
+  --color-paleta-2: var(--paleta-2);
+  --color-paleta-3: var(--paleta-3);
+  --color-paleta-4: var(--paleta-4);
+  --color-paleta-5: var(--paleta-5);
+  --color-paleta-6: var(--paleta-6);
+  --color-sucesso: var(--sucesso);
+  --color-alerta: var(--alerta);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
@@ -81,6 +89,15 @@
   --sidebar-accent-foreground: oklch(0.212 0.019 322.12);
   --sidebar-border: oklch(0.922 0.005 325.62);
   --sidebar-ring: oklch(0.711 0.019 323.02);
+  /* Accent palette for buttons and icons, with chroma kept as soft as the mauve base */
+  --paleta-1: oklch(0.55 0.11 330); /* ameixa */
+  --paleta-2: oklch(0.6 0.12 25); /* rosé */
+  --paleta-3: oklch(0.68 0.11 70); /* mel */
+  --paleta-4: oklch(0.56 0.07 200); /* petróleo */
+  --paleta-5: oklch(0.58 0.08 150); /* sálvia */
+  --paleta-6: oklch(0.55 0.1 285); /* lavanda */
+  --sucesso: oklch(0.55 0.11 150);
+  --alerta: oklch(0.62 0.12 75);
 }
 
 .dark {
@@ -115,6 +132,14 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.542 0.034 322.5);
+  --paleta-1: oklch(0.7 0.11 330);
+  --paleta-2: oklch(0.72 0.12 25);
+  --paleta-3: oklch(0.8 0.11 70);
+  --paleta-4: oklch(0.7 0.08 200);
+  --paleta-5: oklch(0.72 0.09 150);
+  --paleta-6: oklch(0.7 0.1 285);
+  --sucesso: oklch(0.72 0.13 150);
+  --alerta: oklch(0.78 0.13 75);
 }
 
 @layer base {

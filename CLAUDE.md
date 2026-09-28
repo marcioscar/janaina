@@ -20,13 +20,25 @@ No test runner or linter is configured yet.
 - Routes are declared explicitly in `app/routes.ts` (not file-based). Route modules live in `app/routes/` and import their types from `./+types/<route>`.
 - `app/root.tsx` holds the HTML `Layout`, the root `App` and the global `ErrorBoundary`.
 - Path alias `~/*` → `app/*`.
-- `app/welcome/` is leftover template scaffolding and can be removed once real pages exist.
+- Layout: `app/root.tsx` wraps every page in a collapsible shadcn sidebar (`app/components/app-sidebar.tsx`). To add a page, add the route in `app/routes.ts` and an entry to `navGroups` in the sidebar.
+- `/` redirects to `/despesas`. The despesas page was ported from the `marcioscar` project's `/contas` page, without the Brassaco feature.
+
+## Despesas feature
+
+- `app/routes/despesas.tsx`: the loader filters by date range (`?dataInicio=&dataFim=`, defaults to the current month). A single action dispatches on the `intent` form field: `criar` (the default), `editar`, `excluir` or `importar-pdf`.
+- `app/models/despesas.server.ts`: queries. Date-filtered reads go through `db.$runCommandRaw` with `montarFiltroData`, because Prisma's MongoDB driver doesn't support every query operator. Follow that pattern for new date filters.
+- `app/models/pocketbase.server.ts` uploads receipts (comprovantes) to PocketBase and stores the public URL in `comprovante`.
+- `app/models/importar-pdf.server.ts` sends a bank statement or card-bill PDF to the Claude API (`claude-sonnet-4-6`) and gets transactions back as JSON. `importar-pdf-dialog.tsx` then walks the user through them one by one and keeps progress in `localStorage`.
+- Categories live in the database and are managed at `/categorias` (`app/models/categorias.server.ts`). Despesas store the category *name*, not an id. Renaming a category also updates its despesas, and a category that still has despesas can't be deleted. The account list is still hardcoded in `app/components/despesas/despesa-options.ts`.
+- The table uses `@tanstack/react-table` **v8**. Keep it on v8, because v9 changed the API.
 
 ## Database
 
 - **MongoDB Atlas via Prisma 6** (`provider = "mongodb"`), schema in `prisma/schema.prisma`.
 - `DATABASE_URL` in `.env` (gitignored) points to the `janaina` database on the same Atlas cluster used by the `marcioscar` project.
 - `app/db.server.ts` exports a singleton `db` (PrismaClient). Only import it from `*.server.ts` files, loaders and actions — never from client code.
+- Other env vars: `POCKETBASE_URL`, `POCKETBASE_ADMIN_EMAIL`, `POCKETBASE_ADMIN_PASSWORD`, `POCKETBASE_COLLECTION` and `POCKETBASE_FIELD` (receipt upload), plus `ANTHROPIC_API_KEY` (PDF import). All of them are copied from `marcioscar`.
+- Collection `categorias`: nome (unique), createdAt, updatedAt.
 - Collection `despesas`: nome, categoria, valor, data, comprovante, conta, fatura?, obs, createdAt, updatedAt; indexed on `data` and `categoria`.
 
 ## UI / theme
@@ -36,6 +48,7 @@ No test runner or linter is configured yet.
 - **Tailwind CSS v4** via `@tailwindcss/vite` — there is no `tailwind.config`; all theme tokens (CSS variables in oklch) live in `app/app.css` under `:root` and `.dark`.
 - Dark mode is class-based (`@custom-variant dark (&:is(.dark *))`): add the `dark` class to `<html>` to enable it. It no longer follows `prefers-color-scheme` automatically.
 - Font: Inter Variable from `@fontsource-variable/inter` (bundled, no Google Fonts request).
+- Accent palette `--paleta-1` … `--paleta-6`, plus `--sucesso` and `--alerta`, in `app/app.css`. Its hues are tuned to the mauve theme. Tinted action buttons use the shared classes in `app/lib/botoes.ts`.
 - Use semantic token classes (`bg-background`, `text-muted-foreground`, `bg-primary`…) instead of raw colors like `bg-white` / `gray-*`.
 
 ## Deployment
